@@ -2,6 +2,7 @@
 should serve as a basis for implementing the chat server '''
 
 import SocketServer
+import json
 
 '''
 The RequestHandler class for our server.
@@ -24,16 +25,13 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         self.port = self.client_address[1]
         print 'Client connected @' + self.ip + ':' + str(self.port)
         # Wait for data from the client
-        data = self.connection.recv(1024).strip()
+        data = json.loads(self.connection.recv(1024).strip())
         # Check if the data exists
         # (recv could have returned due to a disconnect)
         if data:
             print data
-            global backlog
-            backlog += data
-            print backlog
             # Return the string in uppercase
-            self.connection.sendall(data.upper())
+            self.connection.sendall(json.dumps(data))
         else:
             print 'Client disconnected!'
 
@@ -42,9 +40,11 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         message[3] = [ TID , username, messagetext ]
         return message
         '''
+        pass
 
     def validateClient(username):
-        pass
+        if username.find(
+        
 '''
 This will make all Request handlers being called in its own thread.
 Very important, otherwise only one client will be served at a time
@@ -57,8 +57,8 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 if __name__ == "__main__":
     HOST = 'localhost'
     PORT = 9999
-    backlog = [0]
-    users = [0]
+    backlog = [{}]
+    users = []
 
     # Create the server, binding to localhost on port 9999
     server = ThreadedTCPServer((HOST, PORT), ClientHandler)
