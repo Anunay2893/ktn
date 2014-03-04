@@ -1,8 +1,6 @@
-'''
-KTN-project 2013 / 2014
-Very simple server implementation that should serve as a basis
-for implementing the chat server
-'''
+''' KTN-project 2013 / 2014 Very simple server implementation that
+should serve as a basis for implementing the chat server '''
+
 import SocketServer
 
 '''
@@ -13,7 +11,7 @@ override the handle() method to implement communication to the
 client.
 '''
 
-class CLientHandler(SocketServer.BaseRequestHandler):
+class ClientHandler(SocketServer.BaseRequestHandler):
 
     username = ''
     
@@ -40,10 +38,10 @@ class CLientHandler(SocketServer.BaseRequestHandler):
             print 'Client disconnected!'
 
     def createMessageArray(messagetext, username):
-'''
-       message[3] = [ TID , username, messagetext ]
-       return message
-'''
+        '''
+        message[3] = [ TID , username, messagetext ]
+        return message
+        '''
 
     def validateClient(username):
         pass
@@ -59,11 +57,11 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 if __name__ == "__main__":
     HOST = 'localhost'
     PORT = 9999
-    backlog[] = [0]
-    users[] = [0]
+    backlog = [0]
+    users = [0]
 
     # Create the server, binding to localhost on port 9999
-    server = ThreadedTCPServer((HOST, PORT), CLientHandler)
+    server = ThreadedTCPServer((HOST, PORT), ClientHandler)
 
     # Activate the server; this will keep running until you
     # interrupt the program with Ctrl-C

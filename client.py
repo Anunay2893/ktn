@@ -2,7 +2,7 @@
 KTN-project 2013 / 2014
 '''
 import socket
-
+import MessageWorker
 
 class Client(object):
 
@@ -28,6 +28,7 @@ class Client(object):
         Print ut mottat melding, til kommandolinje
         
         '''
+        received_data = self.connection.recv(1024).strip()
         
     def connection_closed(self, connection):
         self.connection.close()

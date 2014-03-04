@@ -22,4 +22,6 @@ class ReceiveMessageWorker(Thread):
         self.daemeon = True
 
     def run(self):
-        Client.message_recieved('Hrllo', Client.connection)
+        while true:
+            
+            Client.message_recieved('Hrllo', Client.connection)
