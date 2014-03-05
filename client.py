@@ -1,8 +1,8 @@
 '''
 KTN-project 2013 / 2014
 '''
+from MessageWorker import *
 import socket
-import MessageWorker
 import json
 
 class Client(object):
@@ -14,24 +14,28 @@ class Client(object):
 
     def start(self, host, port):
         self.connection.connect((host, port))
-        #worker = MessageWorker.ReceiveMessageWorker(self, self.connection)
+        
+        
+        #Send initial login request
         #self.login(self.username)
-        data = self.read_input()
-        print data
-        self.send(data)
-        self.message_received(self.connection)
         
+    
 
-    def message_received(self, connection):
-        '''
-        MessageWorker kaller denne metoden hver gang klient mottar en melding
-        Print ut mottatt melding, til kommandolinje
+    def parse_server_data(self):
+        while True:
+            data_json = self.connection.recv(1024)
+            if not data_json:
+                return
+            else:
+                try:
+                    data = json.loads(data_json)
+                    print data
+                    print '\n'
+                except:
+                    pass
         
-        '''
-        received_data = json.loads(self.connection.recv(1024).strip())
-        print received_data
-        
-    def connection_closed(self, connection):
+    def close_connection(self, connection):
+        print 'Connection closed'
         self.connection.close()
 
     def send(self, data):
@@ -40,20 +44,26 @@ class Client(object):
     def force_disconnect(self):
         self.connection.close()
 
-    def login(self, username):
-        data = [ { 'request': 'login', 'username': username } ]
+    def login(self):
+        data = { 'request': 'login', 'username': self.username }
         self.send(data)
 
-    def logout():
-        data = [ { 'request': 'logout' } ]
+    def logout(self):
+        data = { 'request': 'logout' }
         self.send(data)
 
-    def read_input(self):
+    def handle_input(self):
         userInput = raw_input('Enter message: ');
-        data = [ { 'request': 'message', 'message': userInput } ]
+        data = { 'request': 'message', 'message': userInput }
         return data
 
 
 if __name__ == "__main__":
     client = Client()
-    client.start('localhost', 9999)
+    client.start('localhost', 9997)
+    # Thread for handling and parsing received data
+    receiver = ReceiveMessageWorker(client)
+    receiver.start()
+    # Thread for taking input and sending data
+    sender = SendMessageWorker(client)
+    sender.start()

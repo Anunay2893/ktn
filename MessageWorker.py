@@ -15,20 +15,30 @@ executing the run() method in a new thread.
 '''
 from threading import Thread
 import client
+import socket
 
 
 class ReceiveMessageWorker(Thread):
 
-    def __init__(self, listener, connection):
-        self.daemeon = True
-        connectionSevered = False
-        connection.settimeout(3.0)
-        print listener
+    def __init__(self, client):
+        super(ReceiveMessageWorker, self).__init__()
+        self.daemon = True
+        self.client = client
 
     def run(self):
-        while connectionSevered == False:
-            try:
-                connection.listen(1)
-                Client.message_received(connection)
-            except socket.error as msg:
-                Client.connection_closed(connection)
+        while True:
+            self.client.parse_server_data()
+                
+           
+class SendMessageWorker(Thread):
+
+    def __init__(self, client):
+        super(SendMessageWorker, self).__init__()
+        self.daemon = True
+        self.client = client
+
+    def run(self):
+        self.client.login()
+        while True:
+            data = self.client.handle_input()
+            self.client.send(data)
