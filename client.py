@@ -1,13 +1,13 @@
 '''
 KTN-project 2013 / 2014
 '''
-from MessageWorker import *
+from workers import *
 import socket
 import json
 
 class Client(object):
 
-    username = 'student'
+    username = 'user2'
 
     def __init__(self):
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -15,12 +15,7 @@ class Client(object):
     def start(self, host, port):
         self.connection.connect((host, port))
         
-        
-        #Send initial login request
-        #self.login(self.username)
-        
     
-
     def parse_server_data(self):
         while True:
             data_json = self.connection.recv(1024)
@@ -33,6 +28,20 @@ class Client(object):
                     print '\n'
                 except:
                     pass
+    
+    
+    '''    
+    def parse_server_data(self):
+        data_json = self.connection.recv(1024)
+        if not data_json:
+            return
+        else:
+            try:
+                data = json.loads(data_json)
+                print data
+            except:
+                pass
+    '''
         
     def close_connection(self, connection):
         print 'Connection closed'
@@ -40,6 +49,7 @@ class Client(object):
 
     def send(self, data):
         self.connection.sendall(json.dumps(data))
+        #print data
 
     def force_disconnect(self):
         self.connection.close()
@@ -47,6 +57,7 @@ class Client(object):
     def login(self):
         data = { 'request': 'login', 'username': self.username }
         self.send(data)
+        print data
 
     def logout(self):
         data = { 'request': 'logout' }

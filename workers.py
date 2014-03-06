@@ -14,7 +14,6 @@ it is the start() method that is responsible for actually
 executing the run() method in a new thread.
 '''
 from threading import Thread
-import client
 import socket
 
 
