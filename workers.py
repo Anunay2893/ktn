@@ -15,6 +15,7 @@ executing the run() method in a new thread.
 '''
 from threading import Thread
 import socket
+import time
 
 
 class ReceiveMessageWorker(Thread):
@@ -37,7 +38,7 @@ class SendMessageWorker(Thread):
         self.client = client
 
     def run(self):
-        self.client.login()
         while True:
             data = self.client.handle_input()
             self.client.send(data)
+            time.sleep(0.2)
