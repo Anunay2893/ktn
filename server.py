@@ -15,8 +15,9 @@ client.
 '''
 
 class ClientHandler(SocketServer.BaseRequestHandler):
-    
+
     def handle(self):
+        global backlog
         # Get a reference to the socket object
         self.connection = self.request
         # Get the remote ip adress of the socket
@@ -24,81 +25,89 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         # Get the remote port number of the socket
         self.port = self.client_address[1]
         print 'Client connected @' + self.ip + ':' + str(self.port)
+        self.login = False
+        self.response = { 'asdf': 'test' }
+        self.username = ''
         while True:
             # Wait for data from the client
             data = json.loads(self.connection.recv(1024).strip())
-            # Validate request type and handle data
             # Check if the data exists
             if data:
                 print data
-                #self.connection.sendall(json.dumps(data))
-                response = self.parse_client_data(data, backlog)
-                self.send(response)
+                self.response, self.login = self.parse_client_data(data, backlog)
+                self.send(self.response)
             else:
                 print 'Client disconnected!'
         self.connection.close()
 
-    # Handles the incoming data from client
+    # Handles the incoming data from a client, and distributes it to the
+    # appropriate client depending on the string i the request field
     def parse_client_data(self, data, backlog):
         request = string.lower(data['request'])
         print request
-        #response = {}
+        response = {}
+        login = False
         if request == 'login':
-            return self.validate_client(data['username'], backlog)
+            response, login = self.validate_client(backlog)
         elif request == 'message':
-            self.parse_message(data)
+            response = self.parse_message(data, backlog)
         elif request == 'logout':
-            self.validate_logout()
+            response, success = self.validate_logout()
         else:
             # Report invalid request
             pass
-        #return response
+        return response, login
 
-
-    def createMessageArray(messagetext, username):
-        '''
-        message[3] = [ TID , username, messagetext ]
-        return message
-        '''
-        pass
-
-    def validate_client(self, username, backlog):
-        print username
-        result = { 'response': 'login', 'username': username }
+    # Validates a connecting client, checks login status and generates response
+    def validate_client(self, backlog):
         global users
-        print users
-        if username.isalnum() != True:
+        result = { 'response': 'login', 'username': self.username }
+        success = False
+        if self.username.isalnum() != True:
             # Return error: invalid username
             result['error'] = 'Invalid username!'
-        print 'test2'
-        if username in users:
-            print users[username]
-            if users[username] == 1:
+        if self.username in users:
+            if users[self.username] == 1:
                 # Return error: name already taken
                 result['error'] = 'Name already taken!'
-            elif users[username] == 0:
+            elif users[self.username] == 0:
                 # Return login response, username and messages (from earlier?)
                 result['messages'] = backlog
-                users[username] = 1
-                print 'test1'
-        elif username not in users:
+                users[self.username] = 1
+                success = True
+        elif self.username not in users:
             # Return login response, username (and messages?)
             result['messages'] = backlog
-            users[username] = 1
-            print 'test4'
-        print 'test3'
-        return result
+            users[self.username] = 1
+            success = True
+        return result, success
         
-    def parse_message(self, message, username, backlog):
-        reponse = [ username, datetime.now(), message ]
-        pass
+    # Processes a received message and generates a response
+    def parse_message(self, data, backlog):
+        global users
+        response = { 'response': 'message' }
+        if self.login == False:
+            response['error'] = 'You are not logged in!'
+        else:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            msg = [ self.username, timestamp, data['message'] ]
+            backlog.append(msg)
+            response['message'] = msg
+        return response
 
     def validate_logout(self):
-        pass
-    
+        success = True
+        response = { 'response': 'logout', 'username': self.username }
+        if self.login == False:
+            response['error'] = 'Not logged in!'
+            success = False
+        return response, success
+            
+        
+
+    # JSON-encodes and broadcasts message to all logged in clients
     def send(self, response):
         self.connection.sendall(json.dumps(response))
-        
 '''
 This will make all Request handlers being called in its own thread.
 Very important, otherwise only one client will be served at a time
@@ -111,8 +120,7 @@ class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 if __name__ == "__main__":
     HOST = 'localhost'
     PORT = 9997
-    backlog = [ { 'user1': 'test message one', 'user2': 'another test message' } ]
-    backlog_test = [ ['username', '<timestamp>', 'test message one'] ]
+    backlog = [ ['username', '<timestamp>', 'test message one'] ]
     users = { 'user1': 1, 'user2': 0 }
 
     # Create the server, binding to localhost on port 9999
