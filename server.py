@@ -4,7 +4,7 @@ should serve as a basis for implementing the chat server '''
 import SocketServer
 import json
 import string
-import time
+from datetime import datetime, time
 
 '''
 The RequestHandler class for our server.
@@ -42,7 +42,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def parse_client_data(self, data, backlog):
         request = string.lower(data['request'])
         print request
-        response = {}
+        #response = {}
         if request == 'login':
             return self.validate_client(data['username'], backlog)
         elif request == 'message':
@@ -52,7 +52,7 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         else:
             # Report invalid request
             pass
-        return response
+        #return response
 
 
     def createMessageArray(messagetext, username):
@@ -63,16 +63,16 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         pass
 
     def validate_client(self, username, backlog):
+        print username
         result = { 'response': 'login', 'username': username }
         global users
         print users
-        print username in users
         if username.isalnum() != True:
             # Return error: invalid username
             result['error'] = 'Invalid username!'
-            return result
-        print 'test3'
-        if username in users == True:
+        print 'test2'
+        if username in users:
+            print users[username]
             if users[username] == 1:
                 # Return error: name already taken
                 result['error'] = 'Name already taken!'
@@ -81,14 +81,16 @@ class ClientHandler(SocketServer.BaseRequestHandler):
                 result['messages'] = backlog
                 users[username] = 1
                 print 'test1'
-        elif username in users == False:
+        elif username not in users:
             # Return login response, username (and messages?)
             result['messages'] = backlog
             users[username] = 1
-        print 'test2'
+            print 'test4'
+        print 'test3'
         return result
         
-    def parse_message(self, data):
+    def parse_message(self, message, username, backlog):
+        reponse = [ username, datetime.now(), message ]
         pass
 
     def validate_logout(self):
@@ -110,6 +112,7 @@ if __name__ == "__main__":
     HOST = 'localhost'
     PORT = 9997
     backlog = [ { 'user1': 'test message one', 'user2': 'another test message' } ]
+    backlog_test = [ ['username', '<timestamp>', 'test message one'] ]
     users = { 'user1': 1, 'user2': 0 }
 
     # Create the server, binding to localhost on port 9999
