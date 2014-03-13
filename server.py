@@ -31,86 +31,87 @@ class ClientHandler(SocketServer.BaseRequestHandler):
             data = json.loads(self.connection.recv(1024).strip())
             # Check if the data exists
             if data:
-                print data
-                self.response, _ = self.parse_client_data(data)
-                print self.response
-                self.send(self.response)
-            else:
-                del server.users[self.username]
-                print 'Client disconnected!'
+                response, broadcast = self.parse_client_data(data)
+                self.send(response, broadcast)
+                print broadcast
+                print response
+                print server.users
+            
+                
         self.connection.close()
 
     # Handles the incoming data from a client, and distributes it to the
     # appropriate client depending on the string i the request field
     def parse_client_data(self, data):
+        broadcast = False
         request = string.lower(data['request'])
         response = {}
-        loggedIn = False
         if request == 'login':
             self.username = data['username']
-            response, self.loggedIn = self.validate_client()
+            response = self.validate_login()
         elif request == 'message':
-            response = self.parse_message(data)
+            response, broadcast = self.parse_message(data)
         elif request == 'logout':
-            response, logout_success = self.validate_logout()
+            response = self.validate_logout()
         else:
-            # Report invalid request
             response = { 'response': 'Invalid request!' }
-        return response, loggedIn
+        return response, broadcast
 
     # Validates a connecting client, checks login status and generates response
-    def validate_client(self):
+    def validate_login(self):
         response = { 'response': 'login', 'username': self.username }
-        success = False
         if self.username.isalnum() != True:
             # Return error: invalid username
             print self.username
             response['error'] = 'Invalid username!'
-            return response, success
+            return response
         if self.username in server.users:
             # Return error: name already taken
             response['error'] = 'Name already taken!'
         elif self.username not in server.users:
             # Return login response, username (and messages?)
             response['messages'] = server.backlog
-            success = True
-        if (self.loggedIn == False & success == True):
+            server.users[self.username] = self.request
             self.loggedIn = True
-        return response, success
+        return response
         
     # Processes a received message and generates a response
     def parse_message(self, data):
         response = { 'response': 'message' }
         if self.loggedIn == False:
-            response['error'] = 'You are not logged in!'
+            response['error'] = 'Not logged in!'
+            broadcast = False
         else:
             timestamp = datetime.now().strftime("%H:%M:%S")
             msg = [ self.username, timestamp, data['message'] ]
             server.backlog.append(msg)
             response['message'] = msg
-        return response
+            broadcast = True
+        return response, broadcast
 
     def validate_logout(self):
-        success = True
         response = { 'response': 'logout', 'username': self.username }
         if self.loggedIn == False:
             response['error'] = 'Not logged in!'
-            success = False
         else:
             self.loggedIn = False
             timestamp = datetime.now().strftime("%H:%M:%S")
             server.backlog.append([ self.username, timestamp, 'Logged out succesfully' ])
-            del server.users[self.username]
-        return response, success        
+            try:
+                del server.users[self.username]
+            except:
+                pass
+        return response
 
-    # JSON-encodes and responds to current client
-    def send(self, response):
-        self.connection.sendall(json.dumps(response))
-
-    def broadcast(self, data):
-        for username in server.users:
-            server.users[username].sendall(json.dumps(data))
-        
+    # JSON-encodes and sends to client or broadcast
+    def send(self, response, broadcast):
+        if broadcast == True:
+            for username in server.users:
+                server.users[username].sendall(json.dumps(response)) # Error here
+                print "test1"
+        elif broadcast == False:
+            self.request.sendall(json.dumps(response))
+                
 '''
 This will make all Request handlers being called in its own thread.
 Very important, otherwise only one client will be served at a time
@@ -120,7 +121,7 @@ Very important, otherwise only one client will be served at a time
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     def init(self):
         self.backlog = [ ['username', '<timestamp>', 'test message one'] ]
-        self.users = { 'user1': '10.1.1.1', 'user2': '10.1.1.2' }
+        self.users = {}
 
 
 if __name__ == "__main__":

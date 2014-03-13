@@ -9,8 +9,6 @@ import json
 
 class Client(object):
 
-    username = 'testuser2'
-
     def __init__(self):
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.loggedIn = False
@@ -28,6 +26,7 @@ class Client(object):
                 try:
                     data = json.loads(data_json)
                     self.generate_output(data)
+                    print userInput
                     #print data
                     #print '\n'
                 except:
@@ -83,12 +82,19 @@ class Client(object):
 
     def handle_input(self):
         userInput = raw_input('Enter message: ');
-        if userInput == 'login':
+        inputList = userInput.split()
+        if (inputList[0].lower() == 'login') & (len(inputList) > 1):
+            self.username = inputList[1]
             self.login()
-        elif userInput == 'logout':
+        elif inputList[0].lower() == 'logout':
             self.logout()
         else:
             return { 'request': 'message', 'message': userInput }
+
+        # Funksjon for aa sjekke om user input er gyldig foer f.eks login() kan kalles
+    def validate_input(self, s):
+        
+        pass
 
 
 if __name__ == "__main__":
