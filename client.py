@@ -10,10 +10,10 @@ import json
 class Client(object):
 
     username = 'testuser2'
-    loggedIn = False
 
     def __init__(self):
         self.connection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.loggedIn = False
 
     def start(self, host, port):
         self.connection.connect((host, port))
@@ -76,7 +76,6 @@ class Client(object):
     def login(self):
         data = { 'request': 'login', 'username': self.username }
         self.send(data)
-        #print data
 
     def logout(self):
         data = { 'request': 'logout' }
