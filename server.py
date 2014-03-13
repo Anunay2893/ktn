@@ -112,14 +112,15 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         else:
             users[self.username] = 0
             self.loggedIn = False
-            backlog.append([ self.username, '<timestamp>', 'Logged out succesfully' ])
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            backlog.append([ self.username, timestamp, 'Logged out succesfully' ])
         return response, success
             
-        
 
-    # JSON-encodes and broadcasts message to all logged in clients
+    # JSON-encodes and sends to this client
     def send(self, response):
         self.connection.sendall(json.dumps(response))
+        
 '''
 This will make all Request handlers being called in its own thread.
 Very important, otherwise only one client will be served at a time
@@ -129,11 +130,28 @@ Very important, otherwise only one client will be served at a time
 class ThreadedTCPServer(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
     pass
 
+class User:
+
+    def __init__(self, username, ip):
+        self.username = username
+        self.ip = ip
+        self.loggedIn = 0
+
+    def __eq__(self, other):
+        return self.username == other.username
+
+    def set_login(self, status):
+        self.loggedIn = status
+
+    def set_ip(self, ip):
+        self.ip = ip
+
 if __name__ == "__main__":
     HOST = 'localhost'
     PORT = 9997
     backlog = [ ['username', '<timestamp>', 'test message one'] ]
-    users = { 'user1': 1, 'user2': 0 }
+    users = {'user1': '10.1.1.1', 'user2': '10.1.1.2'}
+    
 
     # Create the server, binding to localhost on port 9999
     server = ThreadedTCPServer((HOST, PORT), ClientHandler)
