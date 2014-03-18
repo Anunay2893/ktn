@@ -41,4 +41,4 @@ class SendMessageWorker(Thread):
         while True:
             data = self.client.handle_input()
             self.client.send(data)
-            time.sleep(0.2)
+            time.sleep(0.1)

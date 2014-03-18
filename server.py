@@ -29,15 +29,17 @@ class ClientHandler(SocketServer.BaseRequestHandler):
         while True:
             # Wait for data from the client
             data = json.loads(self.connection.recv(1024).strip())
-            # Check if the data exists
-            if data:
-                response, broadcast = self.parse_client_data(data)
-                self.send(response, broadcast)
-                print broadcast
-                print response
-                print server.users
-            
-                
+            if not data: break
+            response, broadcast = self.parse_client_data(data)
+            self.send(response, broadcast)
+            print broadcast
+            print response
+            print server.users
+        try:    
+            del server.users[self.username]
+        except:
+            pass
+        print "Client disconnected!"        
         self.connection.close()
 
     # Handles the incoming data from a client, and distributes it to the
@@ -61,15 +63,15 @@ class ClientHandler(SocketServer.BaseRequestHandler):
     def validate_login(self):
         response = { 'response': 'login', 'username': self.username }
         if self.username.isalnum() != True:
-            # Return error: invalid username
             print self.username
             response['error'] = 'Invalid username!'
             return response
         if self.username in server.users:
-            # Return error: name already taken
-            response['error'] = 'Name already taken!'
+            if self.loggedIn == True:
+                response['error'] = 'Already logged in!'
+            elif self.loggedIn == False:
+                response['error'] = 'Name already taken!'
         elif self.username not in server.users:
-            # Return login response, username (and messages?)
             response['messages'] = server.backlog
             server.users[self.username] = self.request
             self.loggedIn = True

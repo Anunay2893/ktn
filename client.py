@@ -5,6 +5,7 @@ from workers import *
 import time
 import socket
 import json
+import errno
 
 
 class Client(object):
@@ -19,9 +20,15 @@ class Client(object):
     # Receives incoming data from listener-thread and generates ouput to console
     def parse_server_data(self):
         while True:
-            data_json = self.connection.recv(1024)
-            if not data_json:
+            try:
+                data_json = self.connection.recv(1024)
+            except socket.error as error:
+                if error.errno == errno.ECONNRESET:
+                    print "Connection closed by server."
+                    self.force_disconnect()
+            except:
                 return
+            
             else:
                 try:
                     data = json.loads(data_json)
@@ -50,16 +57,17 @@ class Client(object):
             if 'error' in data:
                 print data['error'] + '\n'
             else:
-                print self.username + ' was logged out succesfully\n'
+                print 'User ' + self.username + ' was logged out succesfully.\n'
 
     def print_message(self, msg):
         print '<' + msg[0] + ' said @ ' + msg[1] + '> ' + msg[2] + '\n'
 
     # Todo
-    def print_backlog(self, bLog):
-        for message in range(len(bLog)):
+    def print_backlog(self, log):
+        print "Login successful, printing messages this session...\n"
+        for message in range(len(log)):
             print message[0] + '% ' + 'said @ ' + message[1] + ':' + ' ' + message[2]
-        
+
         
     def close_connection(self, connection):
         print 'Connection closed'
@@ -71,6 +79,7 @@ class Client(object):
 
     def force_disconnect(self):
         self.connection.close()
+        self.isLoggedin = False
 
     def login(self):
         data = { 'request': 'login', 'username': self.username }
@@ -82,8 +91,11 @@ class Client(object):
 
     def handle_input(self):
         userInput = raw_input('Enter message: ');
-        inputList = userInput.split()
-        if (inputList[0].lower() == 'login') & (len(inputList) > 1):
+        valid, error, inputList = self.validate_input(userInput)
+        if valid == False:
+            print error
+            return
+        if inputList[0].lower() == 'login':
             self.username = inputList[1]
             self.login()
         elif inputList[0].lower() == 'logout':
@@ -93,8 +105,17 @@ class Client(object):
 
         # Funksjon for aa sjekke om user input er gyldig foer f.eks login() kan kalles
     def validate_input(self, s):
-        
-        pass
+        ok = True
+        strLst = s.lower().split()
+        err = "Invalid input: "
+        if s.split() == []:
+            ok, err = False, err + "No characters entered, please enter a message...\n"
+        elif (strLst[0].lower() == 'login') & (len(strLst) < 2):
+            if self.loggedIn == True:
+                ok, err = False, "Already logged in!\n"
+            elif self.loggedIn == False:
+                ok, err = False, err + "Please enter a username...\n"
+        return ok, err, strLst
 
 
 if __name__ == "__main__":
